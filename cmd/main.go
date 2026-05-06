@@ -26,7 +26,7 @@ func RunProgram() bool {
 		cli.Borrow()
 		fmt.Println()
 	case "return":
-		if err := storage.SaveToFile("library.json"); err != nil {
+		if err := storage.SaveToFile("./internal/storage/library.json"); err != nil {
 			log.Fatalf("ошибка при записи данных в файл: %v", err)
 		}
 		fmt.Println("До свидания!")
@@ -43,7 +43,7 @@ func main() {
 	fmt.Println()
 
 	var err error
-	models.Lib, err = storage.LoadFromFile("library.json")
+	models.Lib, err = storage.LoadFromFile("./internal/storage/library.json")
 	if err != nil {
 		log.Fatalf("ошибка при чтении данных из файла %v", err)
 	}

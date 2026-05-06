@@ -2,6 +2,7 @@ package models
 
 import (
 	"fmt"
+	"strconv"
 	"time"
 
 	"github.com/nickchervov/go-library-system/internal/utils"
@@ -15,14 +16,14 @@ type Book struct {
 	Year      int    `json:"year" validate:"required,numeric"`
 	Genre     string `json:"genre" validate:"required,alpha"`
 	Pages     int    `json:"pages" validate:"required,numeric"`
-	Available bool   `json:"available" validate:"required,alpha"`
+	Available bool   `json:"available"`
 }
 
 type LoanInfo struct {
-	BookID     int        `json:"book_id"`
-	MemberID   string     `json:"member_id"`
-	DueDate    time.Time  `json:"due_date"`
-	ReturnDate *time.Time `json:"return_date,omitempty"`
+	BookID     int       `json:"book_id"`
+	Member     string    `json:"member_id"`
+	DueDate    time.Time `json:"due_date"`
+	ReturnDate time.Time `json:"return_date,omitempty"`
 }
 
 type Library struct {
@@ -40,7 +41,8 @@ func NewLibrary() *Library {
 }
 
 var (
-	nextId = 1
+	bookId = 1
+	loanId = 1
 	Lib    = NewLibrary()
 )
 
@@ -49,9 +51,10 @@ func (l *Library) AddBook(b Book) error {
 		return fmt.Errorf("ошибка при валидации данных: %v", err)
 	}
 	if b.ID == 0 {
-		b.ID = nextId
-		nextId++
+		b.ID = bookId
+		bookId++
 	}
+	b.Available = true
 	l.Books[b.ID] = &b
 	return nil
 }
@@ -67,6 +70,40 @@ func (l *Library) ListBook(genre string) map[int]*Book {
 		}
 	}
 	return listByGenreBooks
+}
+
+func (l *Library) BorrowBook(member string, idBook int, returnDate string) error {
+	if _, exist := l.Books[idBook]; !exist {
+		return fmt.Errorf("книги с таким id не существует")
+	}
+	if !l.Books[idBook].Available {
+		return fmt.Errorf("книга уже занята")
+	}
+	if returnDate == "" {
+		return fmt.Errorf("дата возврата не может быть пустой")
+	}
+	parseReturnDate, err := time.Parse("02.01.2006", returnDate)
+	if err != nil {
+		return fmt.Errorf("некорректно введена дата")
+	}
+	if parseReturnDate.Before(time.Now()) {
+		return fmt.Errorf("дата возврата не может быть в прошлом")
+	}
+
+	loan := LoanInfo{
+		BookID:     idBook,
+		Member:     member,
+		DueDate:    time.Now(),
+		ReturnDate: parseReturnDate,
+	}
+
+	l.Loans[strconv.Itoa(loanId)] = loan
+	loanId++
+
+	l.Members[member] = append(l.Members[member], idBook)
+
+	l.Books[idBook].Available = false
+	return nil
 }
 
 func (l *Library) GetMostPopularGenre() (string, int) {
@@ -101,7 +138,7 @@ func (l *Library) CalculateReadTime(memberId string) time.Duration {
 func (l *Library) FindOverdueLoans() []LoanInfo {
 	var overdueLoans []LoanInfo
 	for _, v := range l.Loans {
-		if v.ReturnDate != nil && v.ReturnDate.Before(time.Now()) {
+		if v.ReturnDate.Before(time.Now()) {
 			overdueLoans = append(overdueLoans, v)
 		}
 	}

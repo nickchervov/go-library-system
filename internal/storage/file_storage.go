@@ -3,6 +3,7 @@ package storage
 import (
 	"encoding/json"
 	"fmt"
+	"io"
 	"os"
 
 	"github.com/nickchervov/go-library-system/internal/models"
@@ -26,15 +27,17 @@ func LoadFromFile(filename string) (*models.Library, error) {
 	}
 	defer file.Close()
 
-	jsonData := make([]byte, 0)
-	file.Read(jsonData)
+	data, err := io.ReadAll(file)
+	if err != nil {
+		return nil, fmt.Errorf("ошибка при чтении данных из файла: %v", err)
+	}
 
-	if len(jsonData) == 0 {
+	if len(data) == 0 {
 		return models.NewLibrary(), nil
 	}
 
 	var decodedLibrary *models.Library
-	if err := json.Unmarshal(jsonData, &decodedLibrary); err != nil {
+	if err := json.Unmarshal(data, &decodedLibrary); err != nil {
 		return nil, fmt.Errorf("ошибка при десериализации данных: %v", err)
 	}
 	return decodedLibrary, nil

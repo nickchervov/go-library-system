@@ -1,6 +1,8 @@
 package interfaces
 
-import "time"
+import (
+	"time"
+)
 
 type Book struct {
 	ID        int    `json:"id"`
@@ -24,4 +26,16 @@ type Library struct {
 	Books   map[int]*Book
 	Members map[string][]string // [Член библиотеки][]id_книг
 	Loans   map[string]LoanInfo
+}
+
+func NewLibrary() *Library {
+	return &Library{
+		Books:   make(map[int]*Book),
+		Members: make(map[string][]string),
+		Loans:   make(map[string]LoanInfo),
+	}
+}
+
+func (l *Library) AddBook(b Book) {
+
 }

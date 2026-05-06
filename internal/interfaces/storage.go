@@ -1,18 +1,21 @@
 package interfaces
 
 import (
+	"errors"
 	"time"
+
+	"github.com/nickchervov/go-library-system/internal/utils"
 )
 
 type Book struct {
-	ID        int    `json:"id"`
-	Title     string `json:"title"`
-	Author    string `json:"author"`
-	ISBN      string `json:"isbn"`
-	Year      string `json:"year"`
-	Genre     string `json:"genre"`
-	Pages     int    `json:"pages"`
-	Available bool   `json:"available"`
+	ID        int    `json:"id" validate:"omitempty"`
+	Title     string `json:"title" validate:"required"`
+	Author    string `json:"author" validate:"required,alpha"`
+	ISBN      string `json:"isbn" validate:"required,numeric,min=13,max=13"`
+	Year      string `json:"year" validate:"required,numeric"`
+	Genre     string `json:"genre" validate:"required,alpha"`
+	Pages     int    `json:"pages" validate:"required,numeric"`
+	Available bool   `json:"available" validate:"required,alpha"`
 }
 
 type LoanInfo struct {
@@ -36,6 +39,29 @@ func NewLibrary() *Library {
 	}
 }
 
-func (l *Library) AddBook(b Book) {
+var nextId = 1
 
+func (l *Library) AddBook(b Book) error {
+	if err := utils.Validator.Struct(b); err != nil {
+		return errors.New("ошибка при валидации данных")
+	}
+	if b.ID == 0 {
+		b.ID = nextId
+		nextId++
+	}
+	l.Books[b.ID] = &b
+	return nil
+}
+
+func (l *Library) ListBook(genre string) map[int]*Book {
+	listByGenreBooks := make(map[int]*Book)
+	if genre == "" {
+		return l.Books
+	}
+	for k, v := range l.Books {
+		if v.Genre == genre {
+			listByGenreBooks[k] = v
+		}
+	}
+	return listByGenreBooks
 }
